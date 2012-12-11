@@ -1,5 +1,7 @@
-# environment (selects different redis db)
-global.node_env ||= process.env.NODE_ENV || global.localEnvironment || 'development'
+global.REDIS = (require 'redis-url')
 
-# module
+require './environment'
+require './extentions'
+require './utils'
+
 module.exports = require './hi-model-base'

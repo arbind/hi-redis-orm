@@ -7,10 +7,10 @@ global.should = chai.should()
 global.expect = chai.expect
 global.assert = chai.assert
 
-redisTestDB = 1
+CAN_NOT_CONNECT = new Error "Could not connect to redis '#{redisURL}'"
 
-global.clearRedisTestEnv = (msg, callback)->
-  if redisTestDB is redis.selected_db
+global.clearRedisTestEnv = (redis, msg, callback)->
+  if redis.selected_db is ALL_ORM_ENV_SETTINGS['test'].redis.dbNum
     redis.dbsize (err, size)->
       console.log "redis[#{redis.selected_db}]:", msg, "purging #{size} keys" if 0 < size
       redis.flushdb (err, ok) ->
