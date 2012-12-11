@@ -10,3 +10,14 @@ describe 'Object', ->
     (expect Object).to.exist
     done()
 
+  it 'isPresent'
+  it 'isEmpty'
+  it 'isString'
+  it 'isNumber'
+
+  it 'merge'
+
+  it '@inject'
+  it '@keys'
+  it '@isHash'
+  it '@contains'

@@ -1,5 +1,5 @@
 {
-  "name": "redis_message_capsule",
+  "name": "hi-redis-orm",
   "author": "Arbind Thakur <arbind@carbonfive.com>",
   "description": "Makes it easy to store complex javascript objects to redis",
   "version": "0.0.1",

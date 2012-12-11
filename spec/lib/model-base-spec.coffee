@@ -2,7 +2,6 @@ describe 'hiModelBase', ->
   ###
   #   instance variables shared by specs
   ###
-  @redis = null
   @subject = null
 
   ###
@@ -18,5 +17,21 @@ describe 'hiModelBase', ->
     clearRedisTestEnv(@redis, "after specs:", done)
 
   it 'exists', (done)=>
-    (expect hiModelBase).to.exist
+    (expect ModelBase).to.exist
     done()
+
+  it '@@extend'
+  it '@@include'
+  it '@constructor'
+  it '@className'
+  it '@id'
+  it '@set/get primitives'
+  it '@set/get array of primitives'
+  it '@set/get hash'
+  it '@set/get array of hashes'
+  it '@set/get model (ref)'
+  it '@set/get array of model (refs)'
+  it '@setFields'
+  it '@toJSON'
+  it '@toEvent'
+  it '@emitTo'

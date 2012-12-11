@@ -4,4 +4,5 @@ require './environment'
 require './extentions'
 require './utils'
 
-module.exports = require './hi-model-base'
+require './redis-orm'
+require './model-base'

@@ -2,7 +2,7 @@
 
 mixinKeywords = ['extended', 'included']
 
-class hiModelBase
+class ModelBase
   @configuration:
     redisURL: process.env.REDIS_URL || process.env.REDISTOGO_URL || 'redis://127.0.0.1:6379/'
     dbNumber: ORM_ENV.redis.dbNum
@@ -95,4 +95,4 @@ class hiModelBase
       channel.emit @className(), @
 
 # make this base class available globally
-module.exports = global.hiModelBase = hiModelBase
+module.exports = global.ModelBase = ModelBase
