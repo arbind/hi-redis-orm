@@ -1,0 +1,38 @@
+{
+  "name": "redis_message_capsule",
+  "author": "Arbind Thakur <arbind@carbonfive.com>",
+  "description": "Makes it easy to store complex javascript objects to redis",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "redis",
+    "orm",
+    "node"
+  ],
+  "private": false,
+  "main": "./index",
+  "directories": {
+    "lib": "./lib/"
+  },
+  "scripts": {
+    "test": "cake test",
+    "build": "coffee --compile  -o ./lib ./coffee"
+  },
+  "dependencies": {
+    "redis-url": "*"
+  },
+  "devDependencies": {
+    "coffee-script": "*",
+    "mocha": "*",
+    "chai": "*",
+    "chai-factories":"*",
+    "charlatan": "*"
+   },
+  "engines": {
+    "node": ">=0.8.12",
+    "npm": ">=1.1.49"
+  }  
+}
