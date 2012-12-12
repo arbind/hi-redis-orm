@@ -22,7 +22,8 @@
     "build": "coffee --compile  -o ./lib ./coffee"
   },
   "dependencies": {
-    "redis-url": "*"
+    "redis-url": "*",
+    "hi-mixin": "*"
   },
   "devDependencies": {
     "coffee-script": "*",

@@ -18,7 +18,18 @@ describe 'redisORM', ->
     clearRedisTestEnv(@redis, "after specs:", done)
 
   it 'exists', (done)=> 
-    (expect redisORM).to.exist
+    (expect RedisORM).to.exist
+    done()
+
+  it 'can be extended as a mixin', (done)=> 
+    class ABC
+      RedisORM.mixinTo @
+
+    a = new ABC
+    (expect ABC).itself.to.respondTo('find')
+    (expect ABC.XYZ).to.equal('statix')
+    (expect a).to.respondTo('save')
+    (expect a.data.a).to.equal(2)
     done()
 
   ###

@@ -1,4 +1,5 @@
-global.REDIS = (require 'redis-url')
+global.REDIS = require 'redis-url'
+global.Mixin = require 'hi-mixin'
 
 require './environment'
 require './extentions'

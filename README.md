@@ -1,13 +1,11 @@
-# hi Redis ORM
+# Redis ORM
 
 ## Easily store complex javascript objects to redis
-Store and retrieve a graph of inter-dependent objects to redis.
+Initial version will support 1-1 and 1-many relationships between objects (many-many may be added lateron).
 
 ## Status
 Initial commit: this is an 'empty' repo at the moment!
-
 Specs are in progress.
-
 
 ## Installation
 
@@ -16,8 +14,7 @@ Specs are in progress.
 ## Usage
 
 ### Make sure redis is running:
-
-The lib defaults to using redis running on localhost
+This lib defaults to using redis running on localhost
 
 ### Open a terminal windows and fire up node:
     $ node
@@ -44,3 +41,11 @@ The lib defaults to using redis running on localhost
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## Test
+
+    npm test
+
+## Build
+
+    coffee --compile  -o ./lib ./coffee

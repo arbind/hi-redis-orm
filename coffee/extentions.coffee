@@ -1,3 +1,5 @@
+# Move these into its own hi-coffee-can module and require it !
+
 global.isPresent ||= (obj)->
   return false unless obj?
   return true for own key, val of obj # hasOwnProperty of any key?
@@ -9,7 +11,10 @@ global.isEmpty = (obj)-> not isPresent(obj)
 global.isString = (thing)-> 'string' is typeof thing or thing instanceof String
 global.isNumber = (thing)-> 'number' is typeof thing or thing instanceof Number
 
+
 # Object class methods
+# Put these into Util, instead of extending Object!
+
 Object.merge ||= (targetHash, hashList...)->
   for hash in hashList
     targetHash[key] = val for own key, val of hash

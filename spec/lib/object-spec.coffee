@@ -1,23 +1,26 @@
-describe 'Object', ->
+# Put these into Util, instead of extending Object!
+# Move these into its own hi-coffee-can module and require it !
 
-  ###
-  #   setup and teardown
-  ###
-  before (done)=> done()
-  after (done)=> done()
+# describe 'Object', ->
 
-  it 'exists', (done)=> 
-    (expect Object).to.exist
-    done()
+#   ###
+#   #   setup and teardown
+#   ###
+#   before (done)=> done()
+#   after (done)=> done()
 
-  it 'isPresent'
-  it 'isEmpty'
-  it 'isString'
-  it 'isNumber'
+#   it 'exists', (done)=> 
+#     (expect Object).to.exist
+#     done()
 
-  it 'merge'
+#   it 'isPresent'
+#   it 'isEmpty'
+#   it 'isString'
+#   it 'isNumber'
 
-  it '@inject'
-  it '@keys'
-  it '@isHash'
-  it '@contains'
+#   it 'merge'
+
+#   it '@inject'
+#   it '@keys'
+#   it '@isHash'
+#   it '@contains'

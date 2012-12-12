@@ -20,8 +20,6 @@ describe 'hiModelBase', ->
     (expect ModelBase).to.exist
     done()
 
-  it '@@extend'
-  it '@@include'
   it '@constructor'
   it '@className'
   it '@id'
