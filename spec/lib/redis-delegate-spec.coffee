@@ -52,9 +52,8 @@ describe 'RedisDelegate', ->
     opCode=
       method: 'get'
       argsArray: [key]
-      callback: cb
 
-    @redisDelegate.invoke opCode
+    @redisDelegate.invoke opCode, cb
 
   it '@mset'
   it '@mget'
@@ -68,7 +67,6 @@ describe 'RedisDelegate', ->
   it '@ttl'
   it '@expire'
   it '@getset'
-
 
   # Hash
   it '@hset'

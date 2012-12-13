@@ -1,3 +1,6 @@
+
+testDBNum = ORM_ENV.redis.dbNum
+
 describe 'redisORM', ->
   ###
   #   instance variables shared by specs
@@ -27,9 +30,7 @@ describe 'redisORM', ->
 
     a = new ABC
     (expect ABC).itself.to.respondTo('find')
-    (expect ABC.XYZ).to.equal('statix')
     (expect a).to.respondTo('save')
-    (expect a.data.a).to.equal(2)
     done()
 
   ###

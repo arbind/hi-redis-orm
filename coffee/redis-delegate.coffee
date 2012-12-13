@@ -4,7 +4,7 @@ class RedisDelegate
   invoke: (opCode, callback)->
     method = opCode.method
     args = opCode.argsArray
-    callback = opCode.callback
-    @redis[method] args..., callback
+    cb = callback || opCode.callback
+    @redis[method] args..., cb
 
 module.exports = RedisDelegate

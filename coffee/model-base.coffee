@@ -30,21 +30,36 @@ class ModelBase extends Mixin
 
   id: ()=> @get('id')
 
-  get: (attName) => 
+  get: (attName) =>
     @_attributes[attName] || @_getRef(attName) || null
 
   set: (attName, value) => 
     @_set attName, value
 
-  _set: (attName, value) => 
-    return unless attName
+  dbGet: (attName, callback) =>
+    @_attributes[attName] || @_getRef(attName) || null
+
+  dbSet: (attName, value, callback) => 
+    return unless attName? and 'function' is typeof callback
     if value instanceof ModelBase
-      @_setRef(attName, value)
+      @_setRefORM(attName, value, callback)
     else
-      @_attributes[attName] = value
+      @_setAttORM(attName, value, callback)
 
   setFields: (atts) =>
     (@_set field, atts[field] if atts[field]?) for field in @classFieldNames if atts?
+
+  _set: (attName, value) => 
+    return unless attName?
+    if value instanceof ModelBase
+      @_setRefORM(attName, value, null)
+      @_setRef(attName, value)
+    else
+      @_setAttORM(attName, value, null)
+      @_setAtt(attName, value)
+
+  _setAtt: (attName, value) => 
+      @_attributes[attName] = value
 
   _setRef: (name, obj)=>
     @_attributes._refIds ||= {}
@@ -55,6 +70,9 @@ class ModelBase extends Mixin
     return @_refs[name] if @_refs[name]?        # return the object if it is already loaded
     return null unless @_attributes._refIds?[name]?          # return null if there is no object or refId for this name
     @_refs[name] = @_loadRef(name, @_attributes._refIds[name]) # load the actual object if there is a refId
+
+  _setAttORM: (attName, value, callback) => 
+  _setRefORM: (attName, value, callback) => 
 
   _loadRefs: ()=> # recursively load all refs
     return unless @_attributes._refIds # nothing to load if there are no refIds
