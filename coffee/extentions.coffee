@@ -55,6 +55,9 @@ String::tokens ||= (delim) ->
   list = @split(delim)
   list = (item.trim() for item in list)
   
+String::startsWith ||= (needle)->
+  0 is @indexOf(needle)
+
 String::toCamel ||= ()->
   @replace /(\-[a-z,A-Z])/g, ($1)->
     $1.toUpperCase().replace('-','')

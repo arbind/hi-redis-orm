@@ -36,7 +36,23 @@ describe 'redisORM', ->
   ###
   #   Public Instance methods
   ###
-  it '@save'
+  it '@save', (done)=>
+    class Shape
+      RedisORM.mixinTo @
+
+    r = new Shape
+    r.length = 19
+    r.width = 20
+    r.origin = {x: 8, y:8 }
+    r.colors = ['blue', 'green']
+    r.center = new Shape
+    r.center.id = 4
+    r.center.radius = 2
+
+    # console.log r.save()
+    # (expect r.save()).to.equal 2
+    done()
+
   it '@destroy'
 
   ###
