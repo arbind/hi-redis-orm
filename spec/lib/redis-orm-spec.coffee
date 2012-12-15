@@ -49,7 +49,7 @@ describe 'redisORM', ->
     r.center.id = 4
     r.center.radius = 2
 
-    # console.log r.save()
+    console.log r.save()
     # (expect r.save()).to.equal 2
     done()
 

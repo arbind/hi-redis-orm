@@ -26,6 +26,11 @@ Object::inject ||= (hashList...)->
     @[key] = val for own key, val of hash
   @
 
+Object::select ||= (fnSelect)->
+  h = {}
+  k[k] = val if fnSelect(k,val) for k,v in @
+  h
+  
 Object::keys ||= ()-> key for own key, val of @
 
 Object::isHash ||= ()->
