@@ -1,11 +1,10 @@
-
 testDBNum = ORM_ENV.redis.dbNum
+redisClient = null
 
 describe 'redisORM', ->
   ###
   #   instance variables shared by specs
   ###
-  @redis = null
   @subject = null
 
   ###
@@ -14,11 +13,11 @@ describe 'redisORM', ->
   ###
   before (done)=>
     materializeRedisClient (err, client)=>
-      @redis = client
-      clearRedisTestEnv(@redis, "before specs:", done)
+      redisClient = client
+      clearRedisTestEnv(redisClient, "before specs:", done)
 
   after (done)=>
-    clearRedisTestEnv(@redis, "after specs:", done)
+    clearRedisTestEnv(redisClient, "after specs:", done)
 
   it 'exists', (done)=> 
     (expect RedisORM).to.exist
@@ -38,9 +37,10 @@ describe 'redisORM', ->
   ###
   it '@save', (done)=>
     class Shape
-      RedisORM.mixinTo @
+      RedisORM.mixinTo @, client: redisClient
 
     r = new Shape
+    r.id = 2
     r.length = 19
     r.width = 20
     r.origin = {x: 8, y:8 }
@@ -49,9 +49,24 @@ describe 'redisORM', ->
     r.center.id = 4
     r.center.radius = 2
 
-    console.log r.save()
-    # (expect r.save()).to.equal 2
-    done()
+    k = r.save()
+    Shape.find 2, (err, s)->
+      console.log s
+      # (expect r.save()).to.equal 2
+      done()
+
+
+  it '@save throws No Id'
+
+  it '@save simple model with primitives'
+  it '@save simple model with arrays'
+  it '@save simple model with hashes'
+
+  it '@save complex model with refs'
+  it '@save complex model with refs in arrays'
+  it '@save complex model with refs in hashes'
+
+  it '@save handles cycle'
 
   it '@destroy'
 
@@ -65,14 +80,10 @@ describe 'redisORM', ->
   it '@@findById'
   it '@@findAll'
 
-  # private methods:
-  # it '@@findObjectForKey'
-  # it '@@findArrayForKey'
-  # it '@@saveArrayForKey'
-  # it '@@objectFromJSON'
-  # it '@@rorm_modelClassName'
-  # it '@@rorm_modelClass'
-  # it '@@rorm_clazz'
-  # it '@@rorm_classNameForKey'
-  # it '@@rorm_logError'
-  
+  ###
+  #   model representations
+  ###
+  it '@toHash'
+  it '@toJSON'
+  it '@toEvent'
+  it '@emitTo'

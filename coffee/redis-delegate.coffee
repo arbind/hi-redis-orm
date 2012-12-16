@@ -1,10 +1,10 @@
-class RedisDelegate
-  constructor: (@redis)->
+# class RedisDelegate
+#   constructor: (@redis)->
 
-  invoke: (opCode, callback)->
-    method = opCode.method
-    args = opCode.argsArray
-    cb = callback || opCode.callback
-    @redis[method] args..., cb
+#   invoke: (opCode, callback)->
+#     method = opCode.method
+#     args = opCode.argsArray
+#     cb = callback || opCode.callback
+#     @redis[method] args..., cb
 
-module.exports = RedisDelegate
+# module.exports = RedisDelegate
