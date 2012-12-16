@@ -13,6 +13,10 @@ Specs are in progress.
 
 ## Usage
 
++++ Only need to RedisORM.mixinTo on the base class -
+    All subclasses will inherit the mixin and be persistable
+    
+
 ### Make sure redis is running:
 This lib defaults to using redis running on localhost
 

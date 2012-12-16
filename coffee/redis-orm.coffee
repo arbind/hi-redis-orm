@@ -1,6 +1,7 @@
-class RORMRef
-  constructor: (@rorm_ref)->
+global.rorm_redisClients ||= {}
 
+# class RORMRef
+#   constructor: (@rorm_ref)->
 
 class RedisORM extends Mixin
 
@@ -17,6 +18,11 @@ class RedisORM extends Mixin
     rorm_CLASS_ARRAY:   'Array'
 
     ###
+    #   Some Error Constants
+    ###
+    rorm_NO_ID: new Error "No id"
+
+    ###
     #   db
     #   returns a redis client bound to redisURL:dbNum
     #   the redis client can is cached globally by redisURL:dbNum
@@ -29,39 +35,58 @@ class RedisORM extends Mixin
       dbNum = @mixinConfig.dbNum || global.dbNum || 0
 
       lookup = "#{url}[#{dbNum}]"
-      global.rorm_redisClients ||= {}
       # create a new client unless another class has already made a connection
       rorm_redisClients[lookup] ||= (require 'redis-url').connect(url).select(dbNum)
+
+    configureRedisORM: (configs)-> @mixinConfig[key] = val for own key, val of configs
 
     find: (id, callback)->
       refKey = @rorm_refKeyForID id
       klazz = @
       @rorm_redis().hgetall refKey, (err, data)->
+        return (callback err, null) unless data?
         x  = new klazz
         # resolve all Values then callback
-        klazz.rorm_resolveValue(x, k, v) for own k,v of data
+        klazz.rorm_resolveJSONValue(x, k, v) for own k,v of data
         # after all values resolve and deref'd
         callback err, x
 
-    rorm_resolveValue:(obj, key, val)-> 
-      v = JSON.parse val
+    save: (model, callback)->
+      throw @rorm_NO_ID unless model.id
+      @rorm_deepSaveAtts(model, callback)      
+
+    destroy: (model, callback) ->
+      throw @rorm_NO_ID unless model.id
+      key = model.rorm_refKey()
+      @rorm_redis().del key, (err, ok)=>
+        callback(err, key) if callback
+      key
+
+    rorm_resolveJSONValue:(obj, key, val)->
+      v = undefined
+      try # convert json value back to js value (also handles null)
+        v = JSON.parse val
+      catch e # or properly convert it to undefined
+        v = undefined
+
       if 'string' is typeof v and v.startsWith('rorm')
         obj[key] = '+++ deref: ' + v            
       else
         obj[key] = v
-
+      obj[key]
     ###
     #   deepSaveAtts
     #   deeply stores the all object atts to redis using:
     #   REDIS.HMSET key, att1, val1 [,att2, val2 ...]
     #   return: redis key
     ###
-    rorm_deepSaveAtts: (model)->
+    rorm_deepSaveAtts: (model, callback)->
       atts = @rorm_attsForModel(model)  # grab the relevant atts to be saved
       redisAtts = @rorm_deepSaveRefs atts # save any values that reference other models
       redisArgs = @rorm_argsForHMSET model.rorm_refKey(), redisAtts
       # console.log '\n', redisArgs
-      @rorm_redis().hmset redisArgs...
+      @rorm_redis().hmset redisArgs..., (err, ok)=>
+        callback(err, redisArgs[0]) if callback?
       redisArgs[0] # return the redis key
 
     rorm_deepSaveArrayValues: (array)-> (item = x.save?() || x) for x in array
@@ -91,6 +116,8 @@ class RedisORM extends Mixin
 
     rorm_deepSaveRefs: (atts)->
       mapOfHash atts, (key, val)=>
+        return [key, null] if val is null # properly preserve null value
+        return [key, undefined] if val is undefined  # properly preserve undefined value
         if val instanceof Array
           mappedValue = @rorm_deepSaveArrayValues val
         # if val is a hash +++ TODO
@@ -100,7 +127,6 @@ class RedisORM extends Mixin
         [key, mappedValue]
 
   @addTheseToInstance:
-    rorm_NO_ID: new Error "No id"
     rorm_class: ()-> @constructor
     rorm_refKey: ()-> @rorm_class().rorm_refKeyForModel(@)
 
@@ -113,9 +139,10 @@ class RedisORM extends Mixin
     #   values are saved as json
     #   refs as redis keys to the object (which all start with the rorm_prefix)
     ###
-    save: ()->
-      throw @rorm_NO_ID unless @id
-      @rorm_class().rorm_deepSaveAtts(@) # save the atts
+    save: (callback)-> @rorm_class().save(@, callback)
+
+    destroy: (callback)-> @rorm_class().destroy(@, callback)
+
 
 
     ###
