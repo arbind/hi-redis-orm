@@ -1,4 +1,4 @@
-# Redis ORM
+# Redis ORM 
 
 ## Easily store complex javascript objects to redis
 Initial version will support 1-1 and 1-many relationships between objects (many-many may be added lateron).
