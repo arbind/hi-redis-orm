@@ -1,3 +1,4 @@
+async = require 'async'
 global.rorm_redisClients ||= {}
 
 # class RORMRef
@@ -40,16 +41,31 @@ class RedisORM extends Mixin
 
     configureRedisORM: (configs)-> @mixinConfig[key] = val for own key, val of configs
 
+    materialize: (id, callback) ->
+      # return from ref table
+      # return from redis
+      # return create new
+
     find: (id, callback)->
       refKey = @rorm_refKeyForID id
-      klazz = @
-      @rorm_redis().hgetall refKey, (err, data)->
+      @rorm_findByRefKey refKey, callback
+
+    rorm_classForRefKey: (key)->
+      className = key.split(':')[1]
+      global[className]
+
+    rorm_findByRefKey: (key, callback)->
+      @rorm_redis().hgetall key, (err, data)=>
         return (callback err, null) unless data?
+        klazz = @rorm_classForRefKey key
         x  = new klazz
-        # resolve all Values then callback
-        klazz.rorm_resolveJSONValue(x, k, v) for own k,v of data
-        # after all values resolve and deref'd
-        callback err, x
+        resolvers = []
+        resolveFunctorFor = (x, k, v)->
+          (cb)->x.rorm_resolveJSONValue k, v, cb
+        
+        resolvers.push resolveFunctorFor(x,k,v) for own k,v of data
+        async.series resolvers, (err, results)-> callback(err, x)
+
 
     save: (model, callback)->
       throw @rorm_NO_ID unless model.id
@@ -62,18 +78,6 @@ class RedisORM extends Mixin
         callback(err, key) if callback
       key
 
-    rorm_resolveJSONValue:(obj, key, val)->
-      v = undefined
-      try # convert json value back to js value (also handles null)
-        v = JSON.parse val
-      catch e # or properly convert it to undefined
-        v = undefined
-
-      if 'string' is typeof v and v.startsWith('rorm')
-        obj[key] = '+++ deref: ' + v            
-      else
-        obj[key] = v
-      obj[key]
     ###
     #   deepSaveAtts
     #   deeply stores the all object atts to redis using:
@@ -84,7 +88,6 @@ class RedisORM extends Mixin
       atts = @rorm_attsForModel(model)  # grab the relevant atts to be saved
       redisAtts = @rorm_deepSaveRefs atts # save any values that reference other models
       redisArgs = @rorm_argsForHMSET model.rorm_refKey(), redisAtts
-      # console.log '\n', redisArgs
       @rorm_redis().hmset redisArgs..., (err, ok)=>
         callback(err, redisArgs[0]) if callback?
       redisArgs[0] # return the redis key
@@ -129,6 +132,22 @@ class RedisORM extends Mixin
   @addTheseToInstance:
     rorm_class: ()-> @constructor
     rorm_refKey: ()-> @rorm_class().rorm_refKeyForModel(@)
+    rorm_resolveJSONValue:(key, val, callback)->
+      v = undefined
+      try # convert json value back to js value (also handles null)
+        v = JSON.parse val
+      catch e # or properly convert it to undefined
+        v = undefined
+
+      if 'string' is typeof v and v.startsWith('rorm')
+        console.log "-- looking up ref:", v
+        @rorm_class().rorm_findByRefKey v, (err, ref)=>
+          @[key] = ref           
+          callback(null, @[key])
+      else
+        @[key] =  v
+        console.log 'set', key, v
+        callback(null, @[key])
 
     ###
     #   save

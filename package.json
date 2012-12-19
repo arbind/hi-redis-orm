@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "redis-url": "*",
+    "async": "*",
     "hi-mixin": "*"
   },
   "devDependencies": {
