@@ -254,7 +254,7 @@ describe 'redisORM', ->
         (expect cntnr.list.length).to.equal 1
         b = cntnr.list[0]
 
-        (expect b.area()).to.equal 7
+        (expect b.area()).to.equal boxL * boxW
         b.destroy()
         cntnr.destroy()
         done()

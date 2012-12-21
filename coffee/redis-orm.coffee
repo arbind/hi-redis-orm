@@ -16,7 +16,7 @@ NO_REDIS_URL = new Error "No url configured for RedisORM mixin!"
 
 
 ###
-#   Resolve Functor
+#   Resolve JSON Functor
 #   Convert redis value (stored as json) into js attribute, array, hash, or model
 #   obj: The object that will have its key set to the resolved value
 ###
@@ -25,6 +25,13 @@ resolveJSONFunctorFor = (klazz, val, obj, key)->
     obj[key] = resolvedValue if obj? and key?
     cb(null, resolvedValue)
 
+###
+#   Resolve Value Functor
+#   Convert a js value into js attribute, array, hash, or model
+#   obj: The object that will have its key set to the resolved value
+#   optionally sets the val to the specified key on object (if obj and key are given)
+#   otherwise, this functor is expected to run in an async call, and will receive an array of results when complete 
+###
 resolveValueFunctorFor = (klazz, val, obj, key)->
   (cb)-> klazz.rorm_resolveValue val, (err, resolvedValue)->
     obj[key] = resolvedValue if obj? and key?
@@ -76,9 +83,9 @@ class RedisORM extends Mixin
         return (callback err, null) unless data?
         klazz = @rorm_classForRefKey key
         x  = new klazz
-        @rorm_resolveHashValues(klazz, x, data, callback)
+        @rorm_resolveHashJSONValues(klazz, x, data, callback)
 
-    rorm_resolveHashValues: (klazz, targetHashObj, unresolvedHash, callback)->
+    rorm_resolveHashJSONValues: (klazz, targetHashObj, unresolvedHash, callback)->
       resolvers = []
       resolvers.push resolveJSONFunctorFor(klazz, v, targetHashObj, k) for own k,v of unresolvedHash
       async.series resolvers, (err, results)-> callback(err, targetHashObj)
@@ -95,13 +102,9 @@ class RedisORM extends Mixin
       if 'string' is typeof val and val.startsWith(@rorm_prefix)
         @rorm_findByRefKey val, callback
       else if val instanceof Array
-        console.log 'resolving array for:', val
-        # @rorm_deepLookupRefsInArrayv, callback
-        callback(null, val)
+        @rorm_deepLookupRefsInArray val, callback
       else if isHash(val)
-        console.log 'resolving hash for:', val
         @rorm_deepLookupRefsInHash val, callback
-        # callback(null, val)
       else
         callback(null, val)
 
@@ -110,6 +113,11 @@ class RedisORM extends Mixin
       resolvers = []
       resolvers.push resolveValueFunctorFor(@, v, targetHashObj, k) for own k,v of unresolvedHash
       async.series resolvers, (err, results)-> callback(err, targetHashObj)
+
+    rorm_deepLookupRefsInArray: (unresolvedArray, callback)->
+      resolvers = []
+      resolvers.push resolveValueFunctorFor(@, v) for v in unresolvedArray
+      async.series resolvers, (err, results)-> callback(err, results)
 
     # rorm_resolveArrayValues: (obj, key, list, callback)->
     #   resolvers = []
