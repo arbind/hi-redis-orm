@@ -1,27 +1,30 @@
 async = require 'async'
 global.rorm_redisClients ||= {}
 
-# class RORMRef
-#   constructor: (@rorm_ref)->
+NO_ID =        new Error "No id!"
+NOT_A_MODEL =  new Error "Object is not a Redis ORM model!"
+NO_REDIS_URL = new Error "No url configured for RedisORM mixin!"
+
+###
+#   Some Constants
+###
+CLASS_ARRAY =  'Array'
+
+TYPE_OBJECT =   'object'
+TYPE_FUNCTION = 'function'
+
+###
+#   Some Error Constants
+###
 
 class RedisORM extends Mixin
-
-  NO_REDIS_URL = new Error "No url configured for RedisORM mixin!"
 
   @addTheseToClass:
     ###
     #   Some Constants
     ###
     rorm_delim:         ':'
-    rorm_prefix:        'rorm:'
-    rorm_TYPE_OBJECT:   'object'
-    rorm_TYPE_FUNCTION: 'function'
-    rorm_CLASS_ARRAY:   'Array'
-
-    ###
-    #   Some Error Constants
-    ###
-    rorm_NO_ID: new Error "No id"
+    rorm_prefix:        'orm:'
 
     ###
     #   db
@@ -62,17 +65,16 @@ class RedisORM extends Mixin
         resolvers = []
         resolveFunctorFor = (x, k, v)->
           (cb)->x.rorm_resolveJSONValue k, v, cb
-        
+
         resolvers.push resolveFunctorFor(x,k,v) for own k,v of data
         async.series resolvers, (err, results)-> callback(err, x)
 
-
     save: (model, callback)->
-      throw @rorm_NO_ID unless model.id
+      throw NO_ID unless model.id
       @rorm_deepSaveAtts(model, callback)      
 
     destroy: (model, callback) ->
-      throw @rorm_NO_ID unless model.id
+      throw NO_ID unless model.id
       key = model.rorm_refKey()
       @rorm_redis().del key, (err, ok)=>
         callback(err, key) if callback
@@ -86,15 +88,11 @@ class RedisORM extends Mixin
     ###
     rorm_deepSaveAtts: (model, callback)->
       atts = @rorm_attsForModel(model)  # grab the relevant atts to be saved
-      redisAtts = @rorm_deepSaveRefs atts # save any values that reference other models
+      redisAtts = @rorm_deepSaveHashValues atts # save any values as reference
       redisArgs = @rorm_argsForHMSET model.rorm_refKey(), redisAtts
       @rorm_redis().hmset redisArgs..., (err, ok)=>
         callback(err, redisArgs[0]) if callback?
       redisArgs[0] # return the redis key
-
-    rorm_deepSaveArrayValues: (array)-> (item = x.save?() || x) for x in array
-
-    rorm_deepSaveHashValues: (hash)-> mapOfHash hash, (key, val)=> [key, val.save?() || val]
 
     ### 
     #   rorm_argsForHMSET
@@ -115,19 +113,34 @@ class RedisORM extends Mixin
 
     rorm_attsForModel: (model)->
       subsetOfHash model, (key,value)=>
-        !(key.startsWith 'rorm_') and (typeof value isnt @rorm_TYPE_FUNCTION)
+        !(key.startsWith 'rorm_') and (typeof value isnt TYPE_FUNCTION)
 
-    rorm_deepSaveRefs: (atts)->
+    rorm_deepSaveHashValues: (atts)->
       mapOfHash atts, (key, val)=>
+        throw NOT_A_MODEL if typeof val is TYPE_FUNCTION # ideally, this won't happen
         return [key, null] if val is null # properly preserve null value
         return [key, undefined] if val is undefined  # properly preserve undefined value
         if val instanceof Array
           mappedValue = @rorm_deepSaveArrayValues val
-        # if val is a hash +++ TODO
-        #   mappedValue = @rorm_deepSaveHashValues val
+        else if (isHash val)
+          mappedValue = @rorm_deepSaveHashValues val
         else
           mappedValue = val.save?() || val
         [key, mappedValue]
+
+    rorm_deepSaveArrayValues: (array)->
+      for val in array
+        throw NOT_A_MODEL if typeof val is TYPE_FUNCTION # ideally, this won't happen
+        item = null if val is null # properly preserve null value
+        item = undefined if val is undefined  # properly preserve undefined value
+        if val instanceof Array
+          item = @rorm_deepSaveArrayValues val
+          console.log item
+          item
+        else if (isHash val)
+          item = @rorm_deepSaveHashValues val
+        else
+          item = val.save?() || val
 
   @addTheseToInstance:
     rorm_class: ()-> @constructor
@@ -139,14 +152,14 @@ class RedisORM extends Mixin
       catch e # or properly convert it to undefined
         v = undefined
 
-      if 'string' is typeof v and v.startsWith('rorm')
-        console.log "-- looking up ref:", v
+      if 'string' is typeof v and v.startsWith(@rorm_class().rorm_prefix)
         @rorm_class().rorm_findByRefKey v, (err, ref)=>
           @[key] = ref           
           callback(null, @[key])
+      # else if array rorm_resolve_array, v, (err, arr)=> @key = arr 
+      # else if hash rorm_resolve_hash, v, (err, hash)=> @key = hash
       else
-        @[key] =  v
-        console.log 'set', key, v
+        @[key] = v
         callback(null, @[key])
 
     ###
@@ -161,8 +174,6 @@ class RedisORM extends Mixin
     save: (callback)-> @rorm_class().save(@, callback)
 
     destroy: (callback)-> @rorm_class().destroy(@, callback)
-
-
 
     ###
     #   toHash

@@ -27,6 +27,10 @@ global.Circle = class Circle extends Shape
   circumfrence: ()-> 2 * @Circle.pi * @radius
 
 
+global.Container = class Container
+  RedisORM.mixinTo @
+  constructor: (@id)->
+
 describe 'redisORM', ->
   ###
   #   instance variables shared by specs
@@ -47,6 +51,7 @@ describe 'redisORM', ->
     materializeRedisClient (err, client)=>
       redisClient = client
       Shape.configureRedisORM client: redisClient
+      Container.configureRedisORM client: redisClient
       clearRedisTestEnv(redisClient, "before specs:", done)
 
   after (done)=>
@@ -214,7 +219,7 @@ describe 'redisORM', ->
           Rectangle.find @id, (err, objParent)=>
             (expect err).not.to.exist
             (expect objParent).to.be.ok
-            console.log "---parent", objParent
+            # console.log "---parent", objParent
             (expect objParent.area()).to.equal parentL * parentW
             (expect objParent.button).to.exist
             (expect objParent.button.area()).to.equal childL * childW
@@ -230,8 +235,53 @@ describe 'redisORM', ->
           #   (expect objChild.area()).to.equal childL * childW
           #   console.log "---- finding ", @id
 
-  it '@save complex model with refs mixed into arrays'
-  it '@save complex model with refs mixed into hashes'
+  it '@save complex model with refs mixed into arrays', (done)=>
+    @id = 'r5'
+    @cid = 'c1'
+    boxL = 18
+    boxW = 20
+    box = new Rectangle @id, boxL, boxW
+
+    bucket = new Container @cid
+    bucket.list = []
+    bucket.list.push box
+    bucket.save (err, ok) =>
+      Container.find @cid, (err, cntnr)=>
+        console.log cntnr
+        (expect err).not.to.exist
+        (expect cntnr).to.be.ok
+        (expect cntnr.list).to.be.ok
+        (expect cntnr.list.length).to.equal 1
+        b = cntnr.list[0]
+
+        (expect b.area()).to.equal 7
+        b.destroy()
+        cntnr.destroy()
+        done()
+
+    
+  it '@save complex model with refs mixed into hashes', (done)=>
+    @id = 'r6'
+    @cid = 'c2'
+    boxL = 12
+    boxW = 14
+    box = new Rectangle @id, boxL, boxW
+
+    bucket = new Container @cid
+    bucket.hash = {}
+    bucket.hash.box = box #[1,[4,3,2],['a','b',box]]
+    bucket.save (err, ok) =>
+      Container.find @cid, (err, cntnr)=>
+        console.log cntnr
+        (expect err).not.to.exist
+        (expect cntnr).to.be.ok
+        (expect cntnr.hash.box).be.ok
+        b = cntnr.hash.box[0]
+
+        (expect b.area()).to.equal 7
+        b.destroy()
+        cntnr.destroy()
+        done()    
 
   it '@save complex model with deep refs'
   it '@save complex model with deep refs mixed into arrays'

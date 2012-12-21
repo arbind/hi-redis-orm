@@ -10,6 +10,10 @@ global.isEmpty = (obj)-> not isPresent(obj)
 
 global.isString = (thing)-> 'string' is typeof thing or thing instanceof String
 global.isNumber = (thing)-> 'number' is typeof thing or thing instanceof Number
+global.isHash = (thing)->
+  return false unless Object is thing?.constructor
+  return false unless 'string' is typeof key for own key, val of thing
+  return true
 
 # Object class methods
 # Put these into Util, instead of extending Object!
