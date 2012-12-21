@@ -1,21 +1,35 @@
 async = require 'async'
 global.rorm_redisClients ||= {}
 
-NO_ID =        new Error "No id!"
-NOT_A_MODEL =  new Error "Object is not a Redis ORM model!"
-NO_REDIS_URL = new Error "No url configured for RedisORM mixin!"
-
 ###
 #   Some Constants
 ###
-CLASS_ARRAY =  'Array'
-
-TYPE_OBJECT =   'object'
 TYPE_FUNCTION = 'function'
 
 ###
 #   Some Error Constants
 ###
+
+NO_ID =        new Error "No id!"
+NOT_A_MODEL =  new Error "Object is not a Redis ORM model!"
+NO_REDIS_URL = new Error "No url configured for RedisORM mixin!"
+
+
+###
+#   Resolve Functor
+#   Convert redis value (stored as json) into js attribute, array, hash, or model
+#   obj: The object that will have its key set to the resolved value
+###
+resolveJSONFunctorFor = (klazz, val, obj, key)->
+  (cb)-> klazz.rorm_resolveJSONValue val, (err, resolvedValue)->
+    obj[key] = resolvedValue if obj? and key?
+    cb(null, resolvedValue)
+
+resolveValueFunctorFor = (klazz, val, obj, key)->
+  (cb)-> klazz.rorm_resolveValue val, (err, resolvedValue)->
+    obj[key] = resolvedValue if obj? and key?
+    cb(null, resolvedValue)
+
 
 class RedisORM extends Mixin
 
@@ -62,12 +76,46 @@ class RedisORM extends Mixin
         return (callback err, null) unless data?
         klazz = @rorm_classForRefKey key
         x  = new klazz
-        resolvers = []
-        resolveFunctorFor = (x, k, v)->
-          (cb)->x.rorm_resolveJSONValue k, v, cb
+        @rorm_resolveHashValues(klazz, x, data, callback)
 
-        resolvers.push resolveFunctorFor(x,k,v) for own k,v of data
-        async.series resolvers, (err, results)-> callback(err, x)
+    rorm_resolveHashValues: (klazz, targetHashObj, unresolvedHash, callback)->
+      resolvers = []
+      resolvers.push resolveJSONFunctorFor(klazz, v, targetHashObj, k) for own k,v of unresolvedHash
+      async.series resolvers, (err, results)-> callback(err, targetHashObj)
+
+    rorm_resolveJSONValue:(val, callback)->
+      v = undefined
+      try # convert json value back to js value (also handles null values)
+        v = JSON.parse val
+      catch e # or properly convert it to undefined
+        v = undefined
+      @rorm_resolveValue v, callback
+
+    rorm_resolveValue:(val, callback)->
+      if 'string' is typeof val and val.startsWith(@rorm_prefix)
+        @rorm_findByRefKey val, callback
+      else if val instanceof Array
+        console.log 'resolving array for:', val
+        # @rorm_deepLookupRefsInArrayv, callback
+        callback(null, val)
+      else if isHash(val)
+        console.log 'resolving hash for:', val
+        @rorm_deepLookupRefsInHash val, callback
+        # callback(null, val)
+      else
+        callback(null, val)
+
+    rorm_deepLookupRefsInHash: (unresolvedHash, callback)->
+      targetHashObj = {}
+      resolvers = []
+      resolvers.push resolveValueFunctorFor(@, v, targetHashObj, k) for own k,v of unresolvedHash
+      async.series resolvers, (err, results)-> callback(err, targetHashObj)
+
+    # rorm_resolveArrayValues: (obj, key, list, callback)->
+    #   resolvers = []
+    #   resolvers.push resolveFunctorFor(obj,k,v) for own k,v of hash
+    #   async.series resolvers, (err, results)-> callback(err, obj)
+
 
     save: (model, callback)->
       throw NO_ID unless model.id
@@ -135,7 +183,6 @@ class RedisORM extends Mixin
         item = undefined if val is undefined  # properly preserve undefined value
         if val instanceof Array
           item = @rorm_deepSaveArrayValues val
-          console.log item
           item
         else if (isHash val)
           item = @rorm_deepSaveHashValues val
@@ -145,23 +192,6 @@ class RedisORM extends Mixin
   @addTheseToInstance:
     rorm_class: ()-> @constructor
     rorm_refKey: ()-> @rorm_class().rorm_refKeyForModel(@)
-    rorm_resolveJSONValue:(key, val, callback)->
-      v = undefined
-      try # convert json value back to js value (also handles null)
-        v = JSON.parse val
-      catch e # or properly convert it to undefined
-        v = undefined
-
-      if 'string' is typeof v and v.startsWith(@rorm_class().rorm_prefix)
-        @rorm_class().rorm_findByRefKey v, (err, ref)=>
-          @[key] = ref           
-          callback(null, @[key])
-      # else if array rorm_resolve_array, v, (err, arr)=> @key = arr 
-      # else if hash rorm_resolve_hash, v, (err, hash)=> @key = hash
-      else
-        @[key] = v
-        callback(null, @[key])
-
     ###
     #   save
     #   stores the object's state in redis

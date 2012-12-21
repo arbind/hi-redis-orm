@@ -259,7 +259,6 @@ describe 'redisORM', ->
         cntnr.destroy()
         done()
 
-    
   it '@save complex model with refs mixed into hashes', (done)=>
     @id = 'r6'
     @cid = 'c2'
@@ -276,9 +275,9 @@ describe 'redisORM', ->
         (expect err).not.to.exist
         (expect cntnr).to.be.ok
         (expect cntnr.hash.box).be.ok
-        b = cntnr.hash.box[0]
+        b = cntnr.hash.box
 
-        (expect b.area()).to.equal 7
+        (expect b.area()).to.equal boxL * boxW
         b.destroy()
         cntnr.destroy()
         done()    
