@@ -1,3 +1,4 @@
+global.r=2
 global.node_env ||= process.env.NODE_ENV || global.localEnvironment || 'development'
 
 global.ALL_ORM_ENV_SETTINGS  = 

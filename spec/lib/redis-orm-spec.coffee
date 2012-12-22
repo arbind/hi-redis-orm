@@ -11,7 +11,7 @@ redisClient = null
 global.Shape = class Shape
   RedisORM.mixinTo @
   area: ()-> @length * @width
-  circumfrence: ()-> 2 * (@length + @width)
+  circumfrence:()-> 2 * (@length + @width)
 
 global.Rectangle = class Rectangle extends Shape
   constructor: (@id, @length, @width)->
@@ -247,7 +247,7 @@ describe 'redisORM', ->
     bucket.list.push box
     bucket.save (err, ok) =>
       Container.find @cid, (err, cntnr)=>
-        console.log cntnr
+        # console.log cntnr
         (expect err).not.to.exist
         (expect cntnr).to.be.ok
         (expect cntnr.list).to.be.ok
@@ -271,7 +271,7 @@ describe 'redisORM', ->
     bucket.hash.box = box #[1,[4,3,2],['a','b',box]]
     bucket.save (err, ok) =>
       Container.find @cid, (err, cntnr)=>
-        console.log cntnr
+        # console.log cntnr
         (expect err).not.to.exist
         (expect cntnr).to.be.ok
         (expect cntnr.hash.box).be.ok
