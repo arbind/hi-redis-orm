@@ -119,23 +119,6 @@ describe 'redisORM', ->
             (expect keys.length).to.equal (count-1)
             done()
 
-  # it '@save', (done)=>
-  #   r = new Shape
-  #   r.id = 2
-  #   r.length = 19
-  #   r.width = 20
-  #   r.origin = {x: 8, y:8 }
-  #   r.colors = ['blue', 'green']
-  #   r.center = new Shape
-  #   r.center.id = 4
-  #   r.center.radius = 2
-
-  #   k = r.save()
-  #   Shape.find 2, (err, s)->
-  #     console.log s
-  #     # (expect r.save()).to.equal 2
-  #     done()
-
   it '@save simple model with primitives', (done)=>
     @id = 'r1'
     Rectangle.find @id, (err, noobj)=>
@@ -227,14 +210,6 @@ describe 'redisORM', ->
             child.destroy()
             done()
 
-          # console.log "---- finding ", @idChild
-          # Rectangle.find @idChild, (err, objChild)=>
-          #   (expect err).not.to.exist
-          #   (expect objChild).to.be.ok
-          #   console.log "---- child", objChild            
-          #   (expect objChild.area()).to.equal childL * childW
-          #   console.log "---- finding ", @id
-
   it '@save complex model with refs mixed into arrays', (done)=>
     @id = 'r5'
     @cid = 'c1'
@@ -282,8 +257,64 @@ describe 'redisORM', ->
         cntnr.destroy()
         done()    
 
-  it '@save complex model with deep refs'
-  it '@save complex model with deep refs mixed into arrays'
+  it '@save complex model with deep refs mixed into arrays', (done)=>
+    @id = 'r5'
+    @cid = 'c1'
+
+    ###
+    Prepare 3 models and place them deep into an array hierarchy:
+    ContainerModel > list > sublist > BoxModel > list > sublist > CircleModel
+    ###
+
+    #prepare a top-level bucket to put everything in
+    bucket = new Container @cid 
+    bucketList = [0,1,2,4,5] # prepare a bucket list
+    bucket.list = bucketList # set the bucket list
+    bucketSubList = ['a', 'b', 'c', 'd'] # prepare a bucket subList
+    idxSubList = 3 # insert a bucketSubList into the bucket list
+    bucketList.splice(idxSubList, 0, bucketSubList)
+    boxL = 18 
+    boxW = 20 # prepare a box to put deep into the sublist
+    box = new Rectangle @id, boxL, boxW    
+    idxBox = 2 # insert the box into the bucket subList
+    bucketSubList.splice(idxBox, 0, box)
+
+    # put a circle into deep into a sublis in the box
+    boxList = [0,2,3,4,5] # prepare a box list
+    box.list = boxList # set the box list
+    boxSubList = ['l', 'm', 'n', 'o', 'p', 'q', 'r'] # prepare a bucket subList
+    idxBoxSubList = 1 # insert a boxSubList into the box list
+    boxList.splice(idxBoxSubList, 0, boxSubList)
+    circleID = 'o8'
+    circleR = 8 # prepare a circle to put deep into the box
+    circle = new Circle circleID, circleR
+    idxCircle = 4 # insert the box into the bucket subList
+    boxSubList.splice(idxCircle, 0, circle)
+
+
+    bucket.save (err, ok) =>
+      Container.find @cid, (err, cntnr)=>
+        (expect err).not.to.exist
+        (expect cntnr).to.be.ok
+        (expect cntnr.list).to.be.ok
+        (expect cntnr.list.length).to.equal 6
+        embeddedList = cntnr.list[idxSubList]
+        (expect embeddedList).to.be.ok
+        b = embeddedList[idxBox]
+        (expect b).to.be.ok
+        (expect b.area()).to.equal boxL * boxW
+
+        embeddedList = b.list[idxBoxSubList]
+        (expect embeddedList).to.be.ok
+        c = embeddedList[idxCircle]
+        (expect c).to.be.ok
+        (expect c.area()).to.equal Circle.pi * circleR * circleR
+
+        cntnr.destroy()
+        b.destroy()
+        c.destroy()
+        done()
+
   it '@save complex model with deep refs mixed into hashes'
 
   it '@save handles cycle'
