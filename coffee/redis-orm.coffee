@@ -133,11 +133,30 @@ class RedisORM extends Mixin
     #   async.series resolvers, (err, results)-> callback(err, obj)
 
 
-    save: (model, callback)->
+    rorm_save: (model, expire, callback)->
       throw NO_ID unless model.id
-      @rorm_deepSaveAtts(model, callback)      
+      unless callback?
+        callback = expire
+        expire = -1
+      seconds = parseInt(expire)
+      @rorm_deepSaveAtts model, (err, 
+        if 0 < seconds?
+          @rorm_expire model, seconds, (err, ok)=>
+            callback(err, key) if callback?
+        else
+          callback(err, key) if callback?
 
-    destroy: (model, callback) ->
+    rorm_expire: (model, seconds, callback)->
+      key = @rorm_refKeyForModel(model)
+      @rorm_redis().expire key, expire, callback
+      key
+
+    rorm_persist: (model, callback)->
+      key = @rorm_refKeyForModel(model)
+      @rorm_redis().persist key, callback
+      key
+
+    rorm_destroy: (model, callback) ->
       throw NO_ID unless model.id
       key = model.rorm_refKey()
       @rorm_redis().del key, (err, ok)=>
@@ -217,13 +236,23 @@ class RedisORM extends Mixin
     #   values are saved as json
     #   refs as redis keys to the object (which all start with the rorm_prefix)
     ###
-    save: (callback)-> @rorm_class().save(@, callback)
+    save: (expireInSeconds, callback)->
+      unless callback?
+        callback = expireInSeconds
+        expireInSeconds = -1
+      @rorm_class().rorm_save(@, expireInSeconds, callback)
 
     initializeFields: (fieldsHash)->
       return unless fieldsHash? and isHash(fieldsHash)
       @[key] = val for own key, val of fieldsHash
 
-    destroy: (callback)-> @rorm_class().destroy(@, callback)
+    expire: (seconds, callback)->
+      @rorm_class().rorm_expire(@, seconds, callback)
+
+    persist: (callback)-> @rorm_class().rorm_persist(@, callback)
+
+    destroy: (callback)->
+      @rorm_class().rorm_destroy(@, callback)
 
     ###
     #   toHash
