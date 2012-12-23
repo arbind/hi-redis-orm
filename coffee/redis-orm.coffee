@@ -65,10 +65,18 @@ class RedisORM extends Mixin
 
     configureRedisORM: (configs)-> @mixinConfig[key] = val for own key, val of configs
 
-    materialize: (id, callback) ->
-      # return from ref table
-      # return from redis
-      # return create new
+    materialize: (idOrHash, callback) ->
+      return callback(NO_ID) unless idOrHash?
+      id = idOrHash.id? || idOrHash.toString?()
+      return callback(NO_ID) unless id?
+      @find id, (err, obj)=>
+        return callback(err) if err?
+        if obj?
+          obj.initializeFields idOrHash
+          return callback(null, obj) if obj
+        item = new @
+        item.initializeFields(idOrHash)
+        return callback(null, item)
 
     find: (id, callback)->
       refKey = @rorm_refKeyForID id
@@ -210,6 +218,10 @@ class RedisORM extends Mixin
     #   refs as redis keys to the object (which all start with the rorm_prefix)
     ###
     save: (callback)-> @rorm_class().save(@, callback)
+
+    initializeFields: (fieldsHash)->
+      return unless fieldsHash? and isHash(fieldsHash)
+      @[key] = val for own key, val of fieldsHash
 
     destroy: (callback)-> @rorm_class().destroy(@, callback)
 

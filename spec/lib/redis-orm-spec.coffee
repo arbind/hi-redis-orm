@@ -1,7 +1,6 @@
 testDBNum = ORM_ENV.redis.dbNum
 redisClient = null
 
-
 ###
 #   Shape 
 #   | < Rectangle < Square
@@ -243,7 +242,7 @@ describe 'redisORM', ->
 
     bucket = new Container @cid
     bucket.hash = {}
-    bucket.hash.box = box #[1,[4,3,2],['a','b',box]]
+    bucket.hash.box = box
     bucket.save (err, ok) =>
       Container.find @cid, (err, cntnr)=>
         # console.log cntnr
@@ -315,15 +314,99 @@ describe 'redisORM', ->
         c.destroy()
         done()
 
-  it '@save complex model with deep refs mixed into hashes'
+  it '@save complex model with deep refs mixed into hashes', (done)=>
+    @id = 'r5'
+    @cid = 'c1'
+
+    ###
+    Prepare 3 models and place them deep into an array hierarchy:
+    ContainerModel > list > sublist > BoxModel > list > sublist > CircleModel
+    ###
+
+    #prepare a top-level bucket to put everything in
+    bucket = new Container @cid 
+    bucket.hash = {a:1, b:2} # set the bucket hash
+    bucket.hash.subHash = {c:3, d:4}
+    boxL = 9
+    boxW = 10 # prepare a box to put deep into the sublist
+    box = new Rectangle @id, boxL, boxW    
+    bucket.hash.subHash.box = box
+
+    # put a circle into deep into a sublis in the box
+    box.hash = {e:5, g:6} # set the box list
+    box.hash.hashLevel2 = {h:7, i:8}
+    circleID = 'c0'
+    circleR = 20 # prepare a circle to put deep into the box
+    circle = new Circle circleID, circleR
+    box.hash.hashLevel2.circle = circle
+
+    bucket.save (err, ok) =>
+      Container.find @cid, (err, cntnr)=>
+        (expect err).not.to.exist
+        (expect cntnr).to.be.ok
+        (expect cntnr.hash).to.be.ok
+        (expect cntnr.hash.a).to.equal 1
+        (expect cntnr.hash.b).to.equal 2
+        embeddedHash = cntnr.hash.subHash
+        (expect embeddedHash).to.be.ok
+        (expect embeddedHash.c).to.to.equal 3
+        (expect embeddedHash.d).to.to.equal 4
+        (expect embeddedHash.e).to.to.be.undefined
+        b = embeddedHash.box
+        (expect b).to.be.ok
+        (expect b.area()).to.equal boxL * boxW
+
+        (expect b.hash).to.be.ok
+        (expect b.hash.e).to.be.equal 5
+        (expect b.hash.g).to.be.equal 6
+        embeddedHash = b.hash.hashLevel2
+        (expect embeddedHash.h).to.to.equal 7
+        (expect embeddedHash.i).to.to.equal 8
+        (expect embeddedHash).to.be.ok
+        c = embeddedHash.circle
+        (expect c).to.be.ok
+        (expect c.area()).to.equal  Circle.pi * circleR * circleR
+
+        cntnr.destroy()
+        b.destroy()
+        c.destroy()
+        done()
 
   it '@save handles cycle'
 
   ###
   #   Public Class methods
   ###
-  it '@@materialize new instance'
-  it '@@materialize existing instance'
+  it '@@materialize new instance', (done)=>
+    @id = 55
+    @cool = 'super cool'
+    circleR = 55
+    hash = {id: @id, radius:circleR, severity: @cool }
+    Circle.materialize hash, (err, c)=>
+      (expect err).not.to.exist
+      (expect c).to.exist
+      (expect c.radius).to.equal circleR
+      (expect c.severity).to.equal @cool
+      Circle.find @id, (err, noobj)=>
+        (expect err).not.to.exist
+        (expect noobj).to.not.exist
+        done()
+
+  it '@@materialize existing instance', (done)=>
+    @id = 77
+    @cool = 'super nice'
+    circleR = 77
+    circle = new Circle
+    hash = {id: @id, radius:circleR, severity: @cool }
+    circle.initializeFields hash
+    circle.save (err, ok) =>
+      Circle.materialize @id, (err, c)=>
+        (expect err).not.to.exist
+        (expect c).to.exist
+        (expect c.radius).to.equal circleR
+        (expect c.severity).to.equal @cool
+        c.destroy()
+        done()
 
   it '@@findAll'
 
