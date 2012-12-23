@@ -65,6 +65,18 @@ class RedisORM extends Mixin
 
     configureRedisORM: (configs)-> @mixinConfig[key] = val for own key, val of configs
 
+    field: (name, options) ->
+      return unless isHash(options)
+      @dbFieldList(name, options) if (options.list? or options.type?.downcase() is 'list')
+      @dbFieldHash(name, options) if (options.hash? or options.type?.downcase() is 'hash')
+      @dbFieldSortedSet(name, options) if ( (options.set? and options.sorted?) or options.type?.downcase() is 'sortedset')
+      @dbFieldSet(name, options) if ( (options.set? and not options.sorted?) or  options.type?.downcase() is 'set')
+
+    dbFieldList: (name, options)-> console.log 'definging dbFieldList called ', name
+    dbFieldHash: (name, options)-> console.log 'definging dbFieldHash called ', name
+    dbFieldSet: (name, options)-> console.log 'definging dbFieldSet called ', name
+    dbFieldSortedSet: (name, options)-> console.log 'definging dbFieldSortedSet called ', name
+
     materialize: (idOrHash, callback) ->
       return callback(NO_ID) unless idOrHash?
       id = idOrHash.id? || idOrHash.toString?()
@@ -127,20 +139,16 @@ class RedisORM extends Mixin
       resolvers.push resolveValueFunctorFor(@, v) for v in unresolvedArray
       async.series resolvers, (err, results)-> callback(err, results)
 
-    # rorm_resolveArrayValues: (obj, key, list, callback)->
-    #   resolvers = []
-    #   resolvers.push resolveFunctorFor(obj,k,v) for own k,v of hash
-    #   async.series resolvers, (err, results)-> callback(err, obj)
-
-
     rorm_save: (model, expire, callback)->
       throw NO_ID unless model.id
-      unless callback?
+
+      if not callback? and typeof expire is TYPE_FUNCTION
         callback = expire
         expire = -1
+
       seconds = parseInt(expire)
-      @rorm_deepSaveAtts model, (err, 
-        if 0 < seconds?
+      @rorm_deepSaveAtts model, (err, key)=>
+        if 0 < seconds
           @rorm_expire model, seconds, (err, ok)=>
             callback(err, key) if callback?
         else
@@ -148,7 +156,7 @@ class RedisORM extends Mixin
 
     rorm_expire: (model, seconds, callback)->
       key = @rorm_refKeyForModel(model)
-      @rorm_redis().expire key, expire, callback
+      @rorm_redis().expire key, seconds, callback
       key
 
     rorm_persist: (model, callback)->
@@ -237,9 +245,6 @@ class RedisORM extends Mixin
     #   refs as redis keys to the object (which all start with the rorm_prefix)
     ###
     save: (expireInSeconds, callback)->
-      unless callback?
-        callback = expireInSeconds
-        expireInSeconds = -1
       @rorm_class().rorm_save(@, expireInSeconds, callback)
 
     initializeFields: (fieldsHash)->

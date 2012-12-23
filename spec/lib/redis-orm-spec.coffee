@@ -17,6 +17,7 @@ global.Rectangle = class Rectangle extends Shape
 
 global.Square = class Square extends Rectangle
   constructor: (@id, @side)-> (super @side, @side)
+  @field 'tweets', {set: true, sorted: true}
 
 global.Circle = class Circle extends Shape
   @pi = 3.14
@@ -408,7 +409,38 @@ describe 'redisORM', ->
         c.destroy()
         done()
 
+
+  it '1-@save can expire after 1 sec', (done)=>
+    @id = 'expireme'
+    good = new Circle @id, 6
+    good.severity = @cool
+    good.save 1, (err, key)=>
+      Circle.find @id, (err, c)=>
+        (expect c).to.be.ok
+
+        fn = ()=>
+          Circle.find @id, (err, x)=>
+            (expect x).to.be.null
+            done()
+        setTimeout fn, 2100 # seems to need a buffer of at least 200ms to remove the key
+
+  it '1-@save can cancel expiration', (done)=>
+    @id = 'persistme'
+    good = new Circle @id, 6
+    good.severity = @cool
+    good.save 1, (err, ok)=>
+      Circle.find @id, (err, c)=>
+        (expect c).to.be.ok
+
+        good.persist (err, ok)=>
+          fn = ()=>
+            Circle.find @id, (err, x)=>
+              (expect x).to.be.ok
+              x.destroy done
+          setTimeout fn, 2100
+
   it '@@findAll'
+
 
   ###
   #   model representations

@@ -26,13 +26,13 @@ task 'build:watch', 'Watch coffee/ for changes and build into lib/', ->
   build(true)
 
 task 'spec', 'Run the specs', ->
-  exec "./node_modules/.bin/mocha -R #{fmt} --require spec/spec-helper --colors spec/lib/*-spec.coffee", (err, stdout, stderr) ->
+  exec "./node_modules/.bin/mocha -t 5000 -R #{fmt} --require spec/spec-helper --colors spec/lib/*-spec.coffee", (err, stdout, stderr) ->
     console.log stdout if stdout
     console.log stderr if stderr
     console.log err if err
 
 task 'spec:watch', 'Run the specs whenever the code changes', ->
-  mocha = spawn './node_modules/.bin/mocha', ['-w', '-R', 'min', '--compilers', 'coffee:coffee-script', '--require', 'spec/spec-helper', '--colors', 'spec/lib'], { cwd: process.cwd(), env: process.env }
+  mocha = spawn './node_modules/.bin/mocha', ['-w',  '-t', '5000', '-R', 'min', '--compilers', 'coffee:coffee-script', '--require', 'spec/spec-helper', '--colors', 'spec/lib'], { cwd: process.cwd(), env: process.env }
   mocha.stderr.on 'data', (data) ->
     process.stderr.write data.toString()
   mocha.stdout.on 'data', (data) =>
